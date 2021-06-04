@@ -2,17 +2,16 @@
 #define PCL_H__
 
 #include <torch/script.h>
+#include <yaml-cpp/yaml.h>
 #include <memory>
 
 class PreceptModule
 {
     private:
         torch::jit::script::Module module;
-        int inputDim;
-        int outputDim;
 
     public:
-        PreceptModule(const char*, int, int);
+        PreceptModule(const char*, const char*);
         float* predict(const float*);
 };
 
