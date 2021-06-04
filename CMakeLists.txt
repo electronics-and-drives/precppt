@@ -26,5 +26,3 @@ target_link_libraries(pcp "${TORCH_LIBRARIES}")
 add_executable(pci pci.cpp)
 set_property(TARGET pci PROPERTY CXX_STANDARD 14)
 target_link_libraries(pci pcp "${TORCH_LIBRARIES}")
-
-
