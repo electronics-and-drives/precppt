@@ -20,3 +20,4 @@ $ cmake --build .
 
 - [ ] Overload constructor w/o `.yml` and use Setters.
     - [ ] Implement these Setters
+- [ ] Implement data pre/post processing and transformations
