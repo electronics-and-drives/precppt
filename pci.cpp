@@ -11,10 +11,10 @@ int main(int argc, const char* argv[])
 
     srand(666);
 
-    int inputDim = 5;
-    int outputDim = 13;
-
     PreceptModule* model = new PreceptModule(argv[1], argv[2]);
+
+    std::cout << "Num Inputs: " << model->getNumInputs() << std::endl;
+    std::cout << "Num Outputs: " << model->getNumOutputs() << std::endl;
 
     //float X[inputDim];
     //for(int i = 0; i < inputDim; i++)
