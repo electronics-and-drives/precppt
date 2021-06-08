@@ -13,24 +13,28 @@ int main(int argc, const char* argv[])
 
     PreceptModule* model = new PreceptModule(argv[1], argv[2]);
 
-    std::cout << "Num Inputs: " << model->getNumInputs() << std::endl;
-    std::cout << "Num Outputs: " << model->getNumOutputs() << std::endl;
+    int inputDim = model->getNumInputs();
+    int outputDim = model->getNumOutputs();
 
-    //float X[inputDim];
-    //for(int i = 0; i < inputDim; i++)
-    //    {X[i] = rand();}
+    std::cout << "TorchScript Model with" << std::endl;
+    std::cout << "Num Inputs: " << inputDim << std::endl;
+    std::cout << "Num Outputs: " << outputDim << std::endl;
 
-    //float* Y = model->predict(X);
+    float X[inputDim];
+    for(int i = 0; i < inputDim; i++)
+        {X[i] = rand();}
 
-    //std::cout << "Input: [ ";
-    //for(float x : X)
-    //    {std::cout << x << ", " ;}
-    //std::cout << "]\n";
+    float* Y = model->predict(X);
 
-    //std::cout << "Output: [ ";
-    //for(int i = 0; i < outputDim; i++)
-    //    {std::cout << Y[i] << ", " ;}
-    //std::cout << "]\n";
+    std::cout << "Input: [ ";
+    for(float x : X)
+        {std::cout << x << ", " ;}
+    std::cout << "]\n";
+
+    std::cout << "Output: [ ";
+    for(int i = 0; i < outputDim; i++)
+        {std::cout << Y[i] << ", " ;}
+    std::cout << "]\n";
 
     //delete y;
     //delete model;
