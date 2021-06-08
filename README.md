@@ -15,3 +15,8 @@ $ cd build
 $ cmake -DCMAKE_PREFIX_PATH=/path/to/libtorch ..
 $ cmake --build .
 ```
+
+## TODO
+
+- [ ] Overload constructor w/o `.yml` and use Setters.
+    - [ ] Implement these Setters
