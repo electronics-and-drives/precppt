@@ -38,18 +38,28 @@ class PreceptModule
         std::vector<std::string>paramsY;
 
     public:
+        // Constructor
         PreceptModule(const char*, const char*);
-        float* predict(const float*);
 
-        // Setters
+        // Separate Loading Methods
+        bool readYAMLcfg(const char*);
+
+        // Inference
+        float* predict(const float*);
 
         // Getters
         int getNumInputs() const;
         int getNumOutputs() const;
-        int getMaxX() const;
-        int getMinX() const;
-        int getMaxY() const;
-        int getMinY() const;
+        std::vector<float> getMaxX() const;
+        std::vector<float> getMinX() const;
+        std::vector<float> getMaxY() const;
+        std::vector<float> getMinY() const;
+        std::vector<float> getLambdaX() const;
+        std::vector<float> getLambdaY() const;
+        std::vector<std::string> getMaskX() const;
+        std::vector<std::string> getMaskY() const;
+        std::vector<std::string> getParamsX() const;
+        std::vector<std::string> getParamsY() const;
 };
 
 #endif
