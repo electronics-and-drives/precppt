@@ -20,9 +20,9 @@ GENERATE_EXPORT_HEADER( pcp
                         STATIC_DEFINE SHARED_EXPORTS_BUILT_AS_STATIC )
 
 set_property(TARGET pcp PROPERTY CXX_STANDARD 14)
-target_link_libraries(pcp "${TORCH_LIBRARIES}")
+target_link_libraries(pcp "${TORCH_LIBRARIES}" yaml-cpp)
 
 ## Executable for demo purposes
 add_executable(pci pci.cpp)
 set_property(TARGET pci PROPERTY CXX_STANDARD 14)
-target_link_libraries(pci pcp "${TORCH_LIBRARIES}")
+target_link_libraries(pci pcp)

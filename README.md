@@ -1,7 +1,13 @@
 # Serving PRECEPT Models
 
-Install [LibTorch]() and run the following snipped to compile and build a
-model.
+## Installation
+
+Depends on:
+
+- [LibTorch](https://pytorch.org/cppdocs/installing.html) 
+- [yaml-cpp](https://github.com/jbeder/yaml-cpp)
+
+## Build from Source
 
 ```sh
 $ mkdir build
@@ -9,3 +15,8 @@ $ cd build
 $ cmake -DCMAKE_PREFIX_PATH=/path/to/libtorch ..
 $ cmake --build .
 ```
+
+## TODO
+
+- [ ] Overload constructor w/o `.yml` and use Setters.
+    - [ ] Implement these Setters

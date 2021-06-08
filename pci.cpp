@@ -3,18 +3,22 @@
 
 int main(int argc, const char* argv[]) 
 {
-    if(argc != 2) 
+    if(argc != 3) 
     {
-        std::cerr << "usage: pci <path-to-exported-script-module>\n";
+        std::cerr << "usage: " << argv[0] << "  <path-to-model.pt> <path-to-config.yml>" << '\n';
         return 1;
     }
 
     srand(666);
 
-    int inputDim = 5;
-    int outputDim = 13;
+    PreceptModule* model = new PreceptModule(argv[1], argv[2]);
 
-    PreceptModule* model = new PreceptModule(argv[1], inputDim, outputDim);
+    int inputDim = model->getNumInputs();
+    int outputDim = model->getNumOutputs();
+
+    std::cout << "TorchScript Model with" << std::endl;
+    std::cout << "Num Inputs: " << inputDim << std::endl;
+    std::cout << "Num Outputs: " << outputDim << std::endl;
 
     float X[inputDim];
     for(int i = 0; i < inputDim; i++)
