@@ -54,8 +54,10 @@ bool PreceptModule::readYAMLcfg(const char* configPath)
     maskX = config["mask_x"].as<std::vector<std::string>>();
     maskY = config["mask_y"].as<std::vector<std::string>>();
     
-    //lambdaX = torch::from_blob(config["lambdas_x"].as<std::vector<float>>());
-    //lambdaY = torch::from_blob(config["lambdas_y"].as<std::vector<float>>());
+    lambdaY = torch::from_blob( config["lambdas_x"].as<std::vector<float>>().data()
+                              , {1, static_cast<long>(maskX.size())} );
+    lambdaY = torch::from_blob( config["lambdas_y"].as<std::vector<float>>().data()
+                              , {1, static_cast<long>(maskY.size())} );
     
     return true;
 }

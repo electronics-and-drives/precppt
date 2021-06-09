@@ -59,10 +59,10 @@ class PreceptModule
         // Getters
         int getNumInputs() const;
         int getNumOutputs() const;
-        //float* getMaxX() const;
-        //float* getMinX() const;
-        //float* getMaxY() const;
-        //float* getMinY() const;
+        float* getMaxX() const;
+        float* getMinX() const;
+        float* getMaxY() const;
+        float* getMinY() const;
         //float* getLambdaX() const;
         //float* getLambdaY() const;
         //std::vector<std::string> getMaskX() const;
