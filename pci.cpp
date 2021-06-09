@@ -20,21 +20,21 @@ int main(int argc, const char* argv[])
     std::cout << "Num Inputs: " << inputDim << std::endl;
     std::cout << "Num Outputs: " << outputDim << std::endl;
 
-    float X[inputDim];
-    for(int i = 0; i < inputDim; i++)
-        {X[i] = rand();}
+    float X[] = { 1.5e-6, 1.5e-7, 0.6, 0.6, 0.0 };
+    //for(int i = 0; i < inputDim; i++)
+    //    {X[i] = rand();}
 
     float* Y = model->predict(X);
 
-    std::cout << "Input: [ ";
-    for(float x : X)
-        {std::cout << x << ", " ;}
-    std::cout << "]" << std::endl;
+    //std::cout << "Input: [ ";
+    //for(float x : X)
+    //    {std::cout << x << ", " ;}
+    //std::cout << "]" << std::endl;
 
-    std::cout << "Output: [ ";
-    for(int i = 0; i < outputDim; i++)
-        {std::cout << Y[i] << ", " ;}
-    std::cout << "]" << std::endl;
+    //std::cout << "Output: [ ";
+    //for(int i = 0; i < outputDim; i++)
+    //    {std::cout << Y[i] << ", " ;}
+    //std::cout << "]" << std::endl;
 
     //delete y;
     //delete model;

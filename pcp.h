@@ -23,14 +23,14 @@ class PreceptModule
 
         // Minima and Maxima of training data, this is used to (re-)scale the
         // inputs and outptus
-        at::Tensor maxX;
-        at::Tensor minX;
-        at::Tensor maxY;
-        at::Tensor minY;
+        torch::Tensor maxX;
+        torch::Tensor minX;
+        torch::Tensor maxY;
+        torch::Tensor minY;
        
         // Lambdas used for Transformation
-        at::Tensor lambdaX;
-        at::Tensor lambdaY;
+        torch::Tensor lambdaX;
+        torch::Tensor lambdaY;
 
         // Box-Cox Transformation Mask
         std::vector<std::string>maskX;
@@ -49,14 +49,14 @@ class PreceptModule
         bool loadTorchModel(const char*);
 
         // Pre-/Post-Processing Transformations
-        at::Tensor scale(const at::Tensor, const at::Tensor, const at::Tensor);
-        at::Tensor unscale(const at::Tensor, const at::Tensor, const at::Tensor);
-        at::Tensor boxCox(const at::Tensor);
-        at::Tensor coxBox(const at::Tensor);
+        torch::Tensor scale(const torch::Tensor, const torch::Tensor, const torch::Tensor);
+        torch::Tensor unscale(const torch::Tensor, const torch::Tensor, const torch::Tensor);
+        torch::Tensor boxCox(const torch::Tensor);
+        torch::Tensor coxBox(const torch::Tensor);
 
         // Convenience Functions
-        at::Tensor scaleX(const at::Tensor);
-        at::Tensor scaleY(const at::Tensor);
+        torch::Tensor scaleX(const torch::Tensor);
+        torch::Tensor scaleY(const torch::Tensor);
 
         // Inference
         float* predict(const float*);

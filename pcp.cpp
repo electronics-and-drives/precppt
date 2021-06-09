@@ -54,10 +54,10 @@ bool PreceptModule::readYAMLcfg(const char* configPath)
     auto rawMinX = config["min_x"].as<std::vector<float>>();
     auto rawMinY = config["min_y"].as<std::vector<float>>();
 
-    maxX = torch::from_blob(rawMaxX.data(), {1, numX});
-    maxY = torch::from_blob(rawMaxY.data(), {1, numY});
-    minX = torch::from_blob(rawMinX.data(), {1, numX});
-    minY = torch::from_blob(rawMinY.data(), {1, numY});
+    maxX = torch::from_blob(rawMaxX.data(), {numX, 1}).clone();
+    maxY = torch::from_blob(rawMaxY.data(), {numY, 1}).clone();
+    minX = torch::from_blob(rawMinX.data(), {numX, 1}).clone();
+    minY = torch::from_blob(rawMinY.data(), {numY, 1}).clone();
 
     // Transformation Mask
     maskX = config["mask_x"].as<std::vector<std::string>>();
@@ -68,9 +68,9 @@ bool PreceptModule::readYAMLcfg(const char* configPath)
     auto rawLY = config["lambdas_y"].as<std::vector<float>>();
 
     lambdaX = torch::from_blob( rawLX.data()
-                              , {1, static_cast<long>(maskX.size())} );
+                              , {static_cast<long>(maskX.size()), 1} ).clone();
     lambdaY = torch::from_blob( rawLY.data()
-                              , {1, static_cast<long>(maskY.size())} );
+                              , {static_cast<long>(maskY.size()), 1} ).clone();
     
     return true;
 }
@@ -84,9 +84,9 @@ bool PreceptModule::readYAMLcfg(const char* configPath)
 //       ⎝max(x)-min(x)⎠
 //
 //  scale :: Tensor -> Tensor
-at::Tensor PreceptModule::scale( const at::Tensor var
-                               , const at::Tensor min
-                               , const at::Tensor max )
+torch::Tensor PreceptModule::scale( const torch::Tensor var
+                                  , const torch::Tensor min
+                                  , const torch::Tensor max )
     { return ((var - min) / (max - min)); }
 
 // Un-scale the output of the model back to raw/real data
@@ -97,15 +97,15 @@ at::Tensor PreceptModule::scale( const at::Tensor var
 //  x = x' ∙ (max(x) - min(x)) + min(x)
 //
 //  scale :: Tensor -> Tensor
-at::Tensor PreceptModule::unscale( const at::Tensor var
-                                 , const at::Tensor min
-                                 , const at::Tensor max )
+torch::Tensor PreceptModule::unscale( const torch::Tensor var
+                                    , const torch::Tensor min
+                                    , const torch::Tensor max )
     { return (var * (max - min) + min); }
 
 // Conveniece wrappers for scaling
-at::Tensor PreceptModule::scaleX(const at::Tensor X) 
+torch::Tensor PreceptModule::scaleX(const torch::Tensor X) 
     { return scale(X, minX, maxX); }
-at::Tensor PreceptModule::scaleY(const at::Tensor Y) 
+torch::Tensor PreceptModule::scaleY(const torch::Tensor Y) 
     { return unscale(Y, minY, maxY); }
 
 // Evaluate the model for a given input. Takes a float array of raw data
@@ -113,24 +113,27 @@ at::Tensor PreceptModule::scaleY(const at::Tensor Y)
 //  predict :: [float] -> [float]
 float* PreceptModule::predict(const float* x)
 {
-    float inputArray[numX];
-    std::memcpy(inputArray, x, numX);
-
-    at::Tensor X = torch::from_blob(inputArray, {1, numX});
+    std::vector<float> in(x, (x + numX));
+    torch::Tensor X = torch::from_blob(in.data(), {numX, 1});
 
     std::cout << "X: ";
     std::cout << X.slice(1, 0, numX) << std::endl;
-    at::Tensor scaledX = scaleX(X);
+
+    torch::Tensor scaledX = scaleX(X);
     std::cout << "Scaled X: ";
-    std::cout << scaledX.slice(1, 0, 5) << std::endl;
+    std::cout << scaledX.slice(1, 0, numX) << std::endl;
 
     std::vector<torch::jit::IValue> input;
-    input.push_back(scaledX);
-    at::Tensor scaledY = module.forward(input).toTensor();
+    input.push_back(torch::transpose(scaledX, 0, 1));
+    torch::Tensor scaledY = torch::transpose( module.forward(input).toTensor()
+                                            , 0, 1);
+    std::cout << "scaled Y: ";
+    std::cout << scaledY.slice(1, 0, numY) << std::endl;
 
-    at::Tensor Y = scaleY(scaledY);
+    torch::Tensor Y = scaleY(scaledY);
     float* y = Y.data_ptr<float>();
-    //float* y = module.forward(input).toTensor().data_ptr<float>();
+    std::cout << "Y: ";
+    std::cout << Y.slice(1, 0, numY) << std::endl;
 
     return y;
 }
