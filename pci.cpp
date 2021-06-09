@@ -29,12 +29,12 @@ int main(int argc, const char* argv[])
     std::cout << "Input: [ ";
     for(float x : X)
         {std::cout << x << ", " ;}
-    std::cout << "]\n";
+    std::cout << "]" << std::endl;
 
     std::cout << "Output: [ ";
     for(int i = 0; i < outputDim; i++)
         {std::cout << Y[i] << ", " ;}
-    std::cout << "]\n";
+    std::cout << "]" << std::endl;
 
     //delete y;
     //delete model;
