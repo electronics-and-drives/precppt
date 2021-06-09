@@ -4,6 +4,7 @@
 #include <torch/script.h>
 #include <yaml-cpp/yaml.h>
 #include <memory>
+#include <iostream>
 
 class PreceptModule
 {
@@ -48,10 +49,14 @@ class PreceptModule
         bool loadTorchModel(const char*);
 
         // Pre-/Post-Processing Transformations
-        at::Tensor scaleX(const at::Tensor);
-        at::Tensor scaleY(const at::Tensor);
+        at::Tensor scale(const at::Tensor, const at::Tensor, const at::Tensor);
+        at::Tensor unscale(const at::Tensor, const at::Tensor, const at::Tensor);
         at::Tensor boxCox(const at::Tensor);
         at::Tensor coxBox(const at::Tensor);
+
+        // Convenience Functions
+        at::Tensor scaleX(const at::Tensor);
+        at::Tensor scaleY(const at::Tensor);
 
         // Inference
         float* predict(const float*);
@@ -63,12 +68,12 @@ class PreceptModule
         float* getMinX() const;
         float* getMaxY() const;
         float* getMinY() const;
-        //float* getLambdaX() const;
-        //float* getLambdaY() const;
-        //std::vector<std::string> getMaskX() const;
-        //std::vector<std::string> getMaskY() const;
-        //std::vector<std::string> getParamsX() const;
-        //std::vector<std::string> getParamsY() const;
+        float* getLambdaX() const;
+        float* getLambdaY() const;
+        std::vector<std::string> getMaskX() const;
+        std::vector<std::string> getMaskY() const;
+        std::vector<std::string> getParamsX() const;
+        std::vector<std::string> getParamsY() const;
 };
 
 #endif
