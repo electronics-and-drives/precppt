@@ -49,8 +49,10 @@ class PreceptModule
 
     public:
         // Utility
-        std::vector<float> ten2vec(const torch::Tensor);
-        torch::Tensor vec2ten(const std::vector<float>);
+        std::vector<float> ten2vec(const torch::Tensor) const;
+        torch::Tensor vec2ten(const std::vector<float>) const;
+        //std::vector<float> ten2vec(const torch::Tensor);
+        //torch::Tensor vec2ten(const std::vector<float>);
 
         // Constructor
         PreceptModule(const char*, const char*);

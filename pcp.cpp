@@ -16,13 +16,13 @@ PreceptModule::PreceptModule(const char* mdlPath, const char* cfgPath)
 // Utility functions for converting between std::vector and torch::tensor for
 // interfacing with other applications.
 // t2v :: Tensor -> vector
-std::vector<float> PreceptModule::ten2vec(torch::Tensor t)
+std::vector<float> PreceptModule::ten2vec(torch::Tensor t) const
 { 
     return std::vector<float>( t.data_ptr<float>() 
                              , (t.data_ptr<float>() + t.numel())); 
 }
 // v2t :: vector -> Tensor
-torch::Tensor PreceptModule::vec2ten(const std::vector<float> v)
+torch::Tensor PreceptModule::vec2ten(const std::vector<float> v) const
 { 
     return torch::tensor(v, defaultOptions)
                  .reshape({static_cast<long>(v.size()),1})
@@ -197,16 +197,15 @@ std::vector<float> PreceptModule::predict(const std::vector<float> x)
     return y;
 }
 
-
 // Getters
 int PreceptModule::getNumInputs() const {return numX;}
 int PreceptModule::getNumOutputs() const {return numY;}
-//std::vector<float> PreceptModule::getMaxX() const {return ten2vec(maxX);}
-//std::vector<float> PreceptModule::getMinX() const {return minX.data_ptr<float>();}
-//std::vector<float> PreceptModule::getMaxY() const {return maxY.data_ptr<float>();}
-//std::vector<float> PreceptModule::getMinY() const {return minY.data_ptr<float>();}
-//std::vector<float> PreceptModule::getLambdaX() const {return lambdaX.data_ptr<float>();}
-//std::vector<float> PreceptModule::getLambdaY() const {return lambdaY.data_ptr<float>();}
+std::vector<float> PreceptModule::getMaxX() const { return ten2vec(maxX); }
+std::vector<float> PreceptModule::getMinX() const { return ten2vec(minX); }
+std::vector<float> PreceptModule::getMaxY() const {return ten2vec(maxY);}
+std::vector<float> PreceptModule::getMinY() const {return ten2vec(minY);}
+std::vector<float> PreceptModule::getLambdaX() const {return ten2vec(lambdaX);}
+std::vector<float> PreceptModule::getLambdaY() const {return ten2vec(lambdaY);}
 std::vector<std::string> PreceptModule::getMaskX() const {return maskX;}
 std::vector<std::string> PreceptModule::getMaskY() const {return maskY;}
 std::vector<std::string> PreceptModule::getParamsX() const {return paramsX;}
