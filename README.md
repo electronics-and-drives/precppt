@@ -20,6 +20,7 @@ $ cmake --build .
 
 - [ ] Overload constructor w/o `.yml` and use Setters.
     - [ ] Implement these Setters
-- [ ] Implement data pre/post processing and transformations
+- [X] Implement data pre/post processing and transformations
 - [ ] Change all memeber datatypes to `torch::Tensor` and convert in
   setter/getter to array.
+- [ ] Overload predict function to work with 2D vector
