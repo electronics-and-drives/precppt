@@ -4,12 +4,22 @@
 #include <torch/script.h>
 #include <yaml-cpp/yaml.h>
 #include <memory>
+#include <iostream>
 
 class PreceptModule
 {
     private:
+        // Maintain path names as strings
+        std::string modelPath;
+        std::string configPath;
+
         // The torchscript Module
         torch::jit::script::Module module;
+        // The module configuration
+        YAML::Node config;
+        // Default Tensor Options
+        torch::TensorOptions defaultOptions = torch::TensorOptions()
+                                                    .dtype(torch::kFloat32);
 
         // Number of neurons at the input, this is how long the input array
         // needs to be.
@@ -20,32 +30,53 @@ class PreceptModule
 
         // Minima and Maxima of training data, this is used to (re-)scale the
         // inputs and outptus
-        std::vector<float>maxX;
-        std::vector<float>minX;
-        std::vector<float>maxY;
-        std::vector<float>minY;
+        torch::Tensor maxX;
+        torch::Tensor minX;
+        torch::Tensor maxY;
+        torch::Tensor minY;
        
+        // Lambdas used for Transformation
+        torch::Tensor lambdaX;
+        torch::Tensor lambdaY;
+
         // Box-Cox Transformation Mask
         std::vector<std::string>maskX;
         std::vector<std::string>maskY;
-
-        // Lambdas used for Transformation
-        std::vector<float>lambdaX;
-        std::vector<float>lambdaY;
+        std::vector<long> maskXidx;
+        std::vector<long> maskYidx;
+        //std::vector<torch::indexing::TensorIndex> maskXidx;
+        //std::vector<torch::indexing::TensorIndex> maskYidx;
 
         // Name of Parameters
         std::vector<std::string>paramsX;
         std::vector<std::string>paramsY;
 
     public:
+        // Utility
+        std::vector<float> ten2vec(const torch::Tensor) const;
+        torch::Tensor vec2ten(const std::vector<float>) const;
+        //std::vector<float> ten2vec(const torch::Tensor);
+        //torch::Tensor vec2ten(const std::vector<float>);
+
         // Constructor
         PreceptModule(const char*, const char*);
 
         // Separate Loading Methods
-        bool readYAMLcfg(const char*);
+        bool readYAMLcfg(const std::string);
+        bool loadTorchModel(const std::string);
+
+        // Pre-/Post-Processing Transformations
+        torch::Tensor scale(const torch::Tensor, const torch::Tensor, const torch::Tensor);
+        torch::Tensor unscale(const torch::Tensor, const torch::Tensor, const torch::Tensor);
+        torch::Tensor boxCox(const torch::Tensor, const float lambda);
+        torch::Tensor coxBox(const torch::Tensor, const float lambda);
+
+        // Convenience Functions
+        torch::Tensor scaleX(const torch::Tensor);
+        torch::Tensor scaleY(const torch::Tensor);
 
         // Inference
-        float* predict(const float*);
+        std::vector<float> predict(const std::vector<float>);
 
         // Getters
         int getNumInputs() const;
