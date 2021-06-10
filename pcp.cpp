@@ -172,34 +172,29 @@ std::vector<float> PreceptModule::predict(const std::vector<float> x)
     torch::Tensor X = vec2ten(x).reshape({numX,1});
     std::cout << X.slice(1, 0, numX) << std::endl;
 
-    //torch::Tensor scaledX = scaleX(X);
-    //std::cout << scaledX.slice(-1, 0, numX) << std::endl;
+    torch::Tensor scaledX = scaleX(X);
+    std::cout << scaledX.slice(1, 0, numX) << std::endl;
 
-    //std::vector<torch::jit::IValue> input;
-    //input.push_back(scaledX.transpose(0,-1));
+    std::vector<torch::jit::IValue> input;
+    input.push_back(scaledX.transpose(0,1));
 
-    //torch::Tensor scaledY = module.forward(input).toTensor();
-    //std::cout << scaledY.slice(1, 0, numY) << std::endl;
-    //////
-    //torch::Tensor scaledY = torch::transpose( module.forward(input)
-    //                                                .toTensor()
-    //                                                .to(defaultOptions)
-    //                                        , 0, 1);
+    torch::Tensor scaledY = torch::transpose( module.forward(input)
+                                                    .toTensor()
+                                                    .to(defaultOptions)
+                                            , 0, 1);
+    std::cout << scaledY.slice(1, 0, numY) << std::endl;
 
-    //torch::Tensor Y = scaleY(scaledY).to(defaultOptions);
+    torch::Tensor Y = scaleY(scaledY).to(defaultOptions);
+    std::cout << Y.slice(1, 0, numY) << std::endl;
 
-    //std::vector<float> y = ten2vec(Y);
+    std::vector<float> y = ten2vec(Y);
 
-    //std::cout << "Y Tensor: ";
-    //std::cout << torch::transpose(Y.slice(1, 0, numY), 1, 0) << std::endl;
-
-    //std::cout << "Output Before: [ ";
-    //for(int i = 0; i < numY; i++)
-    //    {std::cout << y[i] << ", " ;}
-    //std::cout << "]" << std::endl;
-    //
-    //return y;
-    return x;
+    std::cout << "Output Before: [ ";
+    for(int i = 0; i < numY; i++)
+        {std::cout << y[i] << ", " ;}
+    std::cout << "]" << std::endl;
+    
+    return y;
 }
 
 
