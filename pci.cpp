@@ -20,21 +20,22 @@ int main(int argc, const char* argv[])
     std::cout << "Num Inputs: " << inputDim << std::endl;
     std::cout << "Num Outputs: " << outputDim << std::endl;
 
-    float X[] = { 1.5e-6, 1.5e-7, 0.6, 0.6, 0.0 };
+    std::vector<float> X({ 1.5e-6, 1.5e-7, 0.6, 0.6, 0.0 });
+    //std::vector<float> X;
     //for(int i = 0; i < inputDim; i++)
-    //    {X[i] = rand();}
+    //    {X.push_back(rand());}
 
-    float* Y = model->predict(X);
+    std::cout << "Input: [ ";
+    for(float x : X)
+        {std::cout << x << ", " ;}
+    std::cout << "]" << std::endl;
 
-    //std::cout << "Input: [ ";
-    //for(float x : X)
-    //    {std::cout << x << ", " ;}
-    //std::cout << "]" << std::endl;
+    std::vector<float> Y = model->predict(std::vector<float>(X));
 
-    //std::cout << "Output: [ ";
-    //for(int i = 0; i < outputDim; i++)
-    //    {std::cout << Y[i] << ", " ;}
-    //std::cout << "]" << std::endl;
+    std::cout << "Output After: [ ";
+    for(int i = 0; i < outputDim; i++)
+        {std::cout << Y[i] << ", " ;}
+    std::cout << "]" << std::endl;
 
     //delete y;
     //delete model;

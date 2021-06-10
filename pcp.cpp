@@ -4,19 +4,41 @@
 //  Takes path to torchscript model (*.pt) and config (*.yml) and returns an
 //  inference model.
 //  PreceptModule :: String -> String -> Model
-PreceptModule::PreceptModule(const char* modelPath, const char* configPath)
+PreceptModule::PreceptModule(const char* mdlPath, const char* cfgPath)
 {
+    std::string modelPath(mdlPath);
+    std::string configPath(cfgPath);
+
     loadTorchModel(modelPath);
     readYAMLcfg(configPath);
 }
 
+// Utility functions for converting between std::vector and torch::tensor for
+// interfacing with other applications.
+// t2v :: Tensor -> vector
+std::vector<float> PreceptModule::ten2vec(torch::Tensor t)
+{ 
+    return std::vector<float>( t.data_ptr<float>() 
+                             , (t.data_ptr<float>() + t.numel())); 
+}
+// v2t :: vector -> Tensor
+torch::Tensor PreceptModule::vec2ten(const std::vector<float> v)
+{ 
+    return torch::tensor(v, defaultOptions)
+                 .reshape({static_cast<long>(v.size()),1})
+                 .clone(); 
+}
+    
+
 // Load TorchScript Model generated from PRECEPT Training.
 //  Takes a path to a *.pt model file and loads it.
 //  loadTorchModel :: [char] -> bool
-bool PreceptModule::loadTorchModel(const char* modelPath)
+bool PreceptModule::loadTorchModel(const std::string modelPath)
 {
     try 
-        { module = torch::jit::load(modelPath); }
+    { 
+        module = torch::jit::load(modelPath); 
+    }
     catch (const c10::Error& e) 
     { 
         std::cerr << "Error Loading " << modelPath << std::endl; 
@@ -30,7 +52,7 @@ bool PreceptModule::loadTorchModel(const char* modelPath)
 //  Takes a path to a *.yml config file and reads the nodes
 //  into class attributes.
 //  readYAMLcfg :: [char] -> bool
-bool PreceptModule::readYAMLcfg(const char* configPath)
+bool PreceptModule::readYAMLcfg(const std::string configPath)
 {
     try 
         { config = YAML::LoadFile(configPath); }
@@ -49,29 +71,19 @@ bool PreceptModule::readYAMLcfg(const char* configPath)
     numY = config["num_y"].as<int>();
 
     // Minima and Maxima for scaling / normalizing
-    auto rawMaxX = config["max_x"].as<std::vector<float>>();
-    auto rawMaxY = config["max_y"].as<std::vector<float>>();
-    auto rawMinX = config["min_x"].as<std::vector<float>>();
-    auto rawMinY = config["min_y"].as<std::vector<float>>();
-
-    maxX = torch::from_blob(rawMaxX.data(), {numX, 1}).clone();
-    maxY = torch::from_blob(rawMaxY.data(), {numY, 1}).clone();
-    minX = torch::from_blob(rawMinX.data(), {numX, 1}).clone();
-    minY = torch::from_blob(rawMinY.data(), {numY, 1}).clone();
+    maxX = vec2ten(config["max_x"].as<std::vector<float>>());
+    minX = vec2ten(config["min_x"].as<std::vector<float>>());
+    maxY = vec2ten(config["max_y"].as<std::vector<float>>());
+    minY = vec2ten(config["min_y"].as<std::vector<float>>());
 
     // Transformation Mask
     maskX = config["mask_x"].as<std::vector<std::string>>();
     maskY = config["mask_y"].as<std::vector<std::string>>();
     
     // Lambda parameter for Box-Cox transformation
-    auto rawLX = config["lambdas_x"].as<std::vector<float>>();
-    auto rawLY = config["lambdas_y"].as<std::vector<float>>();
+    lambdaX = vec2ten(config["lambdas_x"].as<std::vector<float>>());
+    lambdaY = vec2ten(config["lambdas_y"].as<std::vector<float>>());
 
-    lambdaX = torch::from_blob( rawLX.data()
-                              , {static_cast<long>(maskX.size()), 1} ).clone();
-    lambdaY = torch::from_blob( rawLY.data()
-                              , {static_cast<long>(maskY.size()), 1} ).clone();
-    
     return true;
 }
 
@@ -88,6 +100,50 @@ torch::Tensor PreceptModule::scale( const torch::Tensor var
                                   , const torch::Tensor min
                                   , const torch::Tensor max )
     { return ((var - min) / (max - min)); }
+
+
+// Box-Cox transformation
+//
+// For λ ≠ 0:
+// 
+//       λ  
+//      y -1
+//   y'=――――
+//       λ  
+//       
+// otherwise:
+// 
+//   y'=ln(y)
+//
+//  boxCox :: Tensor -> Tensor
+torch::Tensor PreceptModule::boxCox(const torch::Tensor var, const float lambda)
+{ 
+    if(lambda != 0.0)
+        { return ((var.pow(lambda) - 1.0) / lambda); }
+    else
+        { return var.log(); }
+}
+
+// Inverse Box-Cox Transformation
+//
+// For λ ≠ 0:
+//
+//      ⎛ln(y'∙λ+1)⎞
+//      ⎜――――――――――⎟
+//      ⎝    λ     ⎠
+//   y=e            
+// otherwise:
+//
+//      y'
+//   y=e  
+// coxBox :: Tensor -> Tensor
+torch::Tensor PreceptModule::coxBox(const torch::Tensor var, const float lambda)
+{
+    if(lambda != 0.0)
+        { return torch::exp( torch::log( var * lambda + 1 ) / lambda ); }
+    else
+        { return torch::exp(var); }
+}
 
 // Un-scale the output of the model back to raw/real data
 // according to the transformation used during training.
@@ -111,42 +167,51 @@ torch::Tensor PreceptModule::scaleY(const torch::Tensor Y)
 // Evaluate the model for a given input. Takes a float array of raw data
 // corresponding to the form specified in the config (*.yml).
 //  predict :: [float] -> [float]
-float* PreceptModule::predict(const float* x)
+std::vector<float> PreceptModule::predict(const std::vector<float> x)
 {
-    std::vector<float> in(x, (x + numX));
-    torch::Tensor X = torch::from_blob(in.data(), {numX, 1});
-
-    std::cout << "X: ";
+    torch::Tensor X = vec2ten(x).reshape({numX,1});
     std::cout << X.slice(1, 0, numX) << std::endl;
 
-    torch::Tensor scaledX = scaleX(X);
-    std::cout << "Scaled X: ";
-    std::cout << scaledX.slice(1, 0, numX) << std::endl;
+    //torch::Tensor scaledX = scaleX(X);
+    //std::cout << scaledX.slice(-1, 0, numX) << std::endl;
 
-    std::vector<torch::jit::IValue> input;
-    input.push_back(torch::transpose(scaledX, 0, 1));
-    torch::Tensor scaledY = torch::transpose( module.forward(input).toTensor()
-                                            , 0, 1);
-    std::cout << "scaled Y: ";
-    std::cout << scaledY.slice(1, 0, numY) << std::endl;
+    //std::vector<torch::jit::IValue> input;
+    //input.push_back(scaledX.transpose(0,-1));
 
-    torch::Tensor Y = scaleY(scaledY);
-    float* y = Y.data_ptr<float>();
-    std::cout << "Y: ";
-    std::cout << Y.slice(1, 0, numY) << std::endl;
+    //torch::Tensor scaledY = module.forward(input).toTensor();
+    //std::cout << scaledY.slice(1, 0, numY) << std::endl;
+    //////
+    //torch::Tensor scaledY = torch::transpose( module.forward(input)
+    //                                                .toTensor()
+    //                                                .to(defaultOptions)
+    //                                        , 0, 1);
 
-    return y;
+    //torch::Tensor Y = scaleY(scaledY).to(defaultOptions);
+
+    //std::vector<float> y = ten2vec(Y);
+
+    //std::cout << "Y Tensor: ";
+    //std::cout << torch::transpose(Y.slice(1, 0, numY), 1, 0) << std::endl;
+
+    //std::cout << "Output Before: [ ";
+    //for(int i = 0; i < numY; i++)
+    //    {std::cout << y[i] << ", " ;}
+    //std::cout << "]" << std::endl;
+    //
+    //return y;
+    return x;
 }
+
 
 // Getters
 int PreceptModule::getNumInputs() const {return numX;}
 int PreceptModule::getNumOutputs() const {return numY;}
-float* PreceptModule::getMaxX() const {return maxX.data_ptr<float>();}
-float* PreceptModule::getMinX() const {return minX.data_ptr<float>();}
-float* PreceptModule::getMaxY() const {return maxY.data_ptr<float>();}
-float* PreceptModule::getMinY() const {return minY.data_ptr<float>();}
-float* PreceptModule::getLambdaX() const {return lambdaX.data_ptr<float>();}
-float* PreceptModule::getLambdaY() const {return lambdaY.data_ptr<float>();}
+//std::vector<float> PreceptModule::getMaxX() const {return ten2vec(maxX);}
+//std::vector<float> PreceptModule::getMinX() const {return minX.data_ptr<float>();}
+//std::vector<float> PreceptModule::getMaxY() const {return maxY.data_ptr<float>();}
+//std::vector<float> PreceptModule::getMinY() const {return minY.data_ptr<float>();}
+//std::vector<float> PreceptModule::getLambdaX() const {return lambdaX.data_ptr<float>();}
+//std::vector<float> PreceptModule::getLambdaY() const {return lambdaY.data_ptr<float>();}
 std::vector<std::string> PreceptModule::getMaskX() const {return maskX;}
 std::vector<std::string> PreceptModule::getMaskY() const {return maskY;}
 std::vector<std::string> PreceptModule::getParamsX() const {return paramsX;}
