@@ -79,7 +79,26 @@ bool PreceptModule::readYAMLcfg(const std::string configPath)
     // Transformation Mask
     maskX = config["mask_x"].as<std::vector<std::string>>();
     maskY = config["mask_y"].as<std::vector<std::string>>();
-    
+
+    // Transformation mask as index
+    std::for_each( maskX.begin(), maskX.end()
+                 , [this] (std::string m) -> void
+                 { 
+                    maskXidx.push_back( std::distance( paramsX.begin()
+                                                     , std::find( paramsX.begin()
+                                                                , paramsX.end()
+                                                                , m ))); 
+                 });
+
+    std::for_each( maskY.begin(), maskY.end()
+                 , [this] (std::string m) -> void
+                 { 
+                    maskYidx.push_back( std::distance( paramsY.begin()
+                                                     , std::find( paramsY.begin()
+                                                                , paramsY.end()
+                                                                , m ))); 
+                 });
+
     // Lambda parameter for Box-Cox transformation
     lambdaX = vec2ten(config["lambdas_x"].as<std::vector<float>>());
     lambdaY = vec2ten(config["lambdas_y"].as<std::vector<float>>());
@@ -164,36 +183,61 @@ torch::Tensor PreceptModule::scaleX(const torch::Tensor X)
 torch::Tensor PreceptModule::scaleY(const torch::Tensor Y) 
     { return unscale(Y, minY, maxY); }
 
-// Evaluate the model for a given input. Takes a float array of raw data
+// Evaluate the model for a given input. Takes a float vector of raw data
 // corresponding to the form specified in the config (*.yml).
 //  predict :: [float] -> [float]
 std::vector<float> PreceptModule::predict(const std::vector<float> x)
 {
+    // Turn input std::vector into torch::Tensor
     torch::Tensor X = vec2ten(x).reshape({numX,1});
-    std::cout << X.slice(1, 0, numX) << std::endl;
 
-    torch::Tensor scaledX = scaleX(X);
-    std::cout << scaledX.slice(1, 0, numX) << std::endl;
+    // Transform inputs
+    torch::Tensor trafoX = X;
+    if(!maskX.empty())
+    {  
+        int lIdx = 0;
+        std::for_each( maskXidx.begin(), maskXidx.end()
+                     , [this, &trafoX, &lIdx] (long mIdx) -> void
+                     {
+                        trafoX[mIdx][0] = coxBox( trafoX[mIdx][0]
+                                                , lambdaX[lIdx].item().toFloat());
+                        lIdx++;
+                     });
+    }
 
+    // Scale transformed inputs [0;1]
+    torch::Tensor scaledX = scaleX(trafoX);
+
+    // Push into batch
     std::vector<torch::jit::IValue> input;
     input.push_back(scaledX.transpose(0,1));
 
+    // Forward pass through network
     torch::Tensor scaledY = torch::transpose( module.forward(input)
                                                     .toTensor()
                                                     .to(defaultOptions)
                                             , 0, 1);
-    std::cout << scaledY.slice(1, 0, numY) << std::endl;
 
-    torch::Tensor Y = scaleY(scaledY).to(defaultOptions);
-    std::cout << Y.slice(1, 0, numY) << std::endl;
+    // Unscale output
+    torch::Tensor trafoY = scaleY(scaledY).to(defaultOptions);
 
+    // Transform outputs
+    torch::Tensor Y = trafoY;
+    if(!maskY.empty())
+    {  
+        int lIdx = 0;
+        std::for_each( maskYidx.begin(), maskYidx.end()
+                     , [this, &Y, &lIdx] (long mIdx) -> void
+                     {
+                        Y[mIdx][0] = coxBox( Y[mIdx][0]
+                                           , lambdaY[lIdx].item().toFloat());
+                        lIdx++;
+                     });
+    }
+
+    // Convert output to std::vector
     std::vector<float> y = ten2vec(Y);
 
-    std::cout << "Output Before: [ ";
-    for(int i = 0; i < numY; i++)
-        {std::cout << y[i] << ", " ;}
-    std::cout << "]" << std::endl;
-    
     return y;
 }
 

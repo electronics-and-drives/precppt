@@ -42,6 +42,10 @@ class PreceptModule
         // Box-Cox Transformation Mask
         std::vector<std::string>maskX;
         std::vector<std::string>maskY;
+        std::vector<long> maskXidx;
+        std::vector<long> maskYidx;
+        //std::vector<torch::indexing::TensorIndex> maskXidx;
+        //std::vector<torch::indexing::TensorIndex> maskYidx;
 
         // Name of Parameters
         std::vector<std::string>paramsX;
